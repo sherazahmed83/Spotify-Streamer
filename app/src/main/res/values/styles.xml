@@ -1,0 +1,32 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Base.Theme.AppCompat.Light.DarkActionBar">
+        <!--
+        Fix for
+         Rendering Problems The following classes could not be instantiated:
+        - android.support.v7.internal.widget.ActionBarOverlayLayout (Open Class, Show Exception, Clear Cache)
+        Tip: Use View.isInEditMode() in your custom views to skip code or show sample data when shown in the IDE
+        Exception Details java.lang.NoClassDefFoundError: Could not initialize class android.support.v7.internal.widget.ActionBarOverlayLayout   
+        at java.lang.reflect.Constructor.newInstance(Constructor.java:526)   
+        at android.view.LayoutInflater.inflate(LayoutInflater.java:482)   
+        at android.view.LayoutInflater.inflate(LayoutInflater.java:414)   
+        at com.android.layoutlib.bridge.bars.BridgeActionBar.<init>(BridgeActionBar.java:84)   
+        at com.android.layoutlib.bridge.bars.AppCompatActionBar.<init>(AppCompatActionBar.java:56)
+        Copy stack to clipboard
+
+        The forum says use
+        Base.Theme.AppCompat.Light.DarkActionBar
+
+        instead of
+
+        Theme.AppCompat.Light.DarkActionBar
+
+        defined above from the following URL
+
+        http://androidforums.com/threads/android-studio-broken-says-missing-class-no-matter-what-project-i-start.917603/
+        -->
+        <!-- Customize your theme here. -->
+    </style>
+
+</resources>
