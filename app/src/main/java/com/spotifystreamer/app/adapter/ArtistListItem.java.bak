@@ -6,7 +6,6 @@ package com.spotifystreamer.app.adapter;
 public class ArtistListItem {
     private String artist;
     private String imagePath;
-    private String id;
 
     public ArtistListItem () {
 
@@ -15,12 +14,6 @@ public class ArtistListItem {
     public ArtistListItem (String artist, String imagePath) {
         this.artist = artist;
         this.imagePath = imagePath;
-    }
-
-    public ArtistListItem (String artist, String imagePath, String id) {
-        this.artist = artist;
-        this.imagePath = imagePath;
-        this.id = id;
     }
 
     public String getArtist() {
@@ -37,13 +30,5 @@ public class ArtistListItem {
 
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 }
