@@ -14,7 +14,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.spotify.sdk.android.player.Player;
 import com.spotifystreamer.app.adapter.ArtistListItem;
 import com.spotifystreamer.app.adapter.CustomListLazyAdapter;
 
@@ -45,20 +44,11 @@ public class MainActivityFragment extends Fragment {
 
     // Search EditText
     private EditText inputSearch;
-
     private ListView listView;
-    // All static variables
-    static final String URL = "http://api.androidhive.info/music/music.xml";
-    // XML node keys
-    static final String KEY_SONG = "song"; // parent node
-    static final String KEY_ID = "id";
-    static final String KEY_TITLE = "title";
-    static final String KEY_ARTIST = "artist";
-    static final String KEY_DURATION = "duration";
-    static final String KEY_THUMB_URL = "thumb_url";
+
+    static String SPOTIFY_ACCESS_TOKEN = "";
 
     private CustomListLazyAdapter adapter;
-    private Player mPlayer;
 
     public MainActivityFragment() {
     }
