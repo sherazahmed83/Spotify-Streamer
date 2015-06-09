@@ -1,12 +1,13 @@
 package com.spotifystreamer.app;
 
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 
 public class TopSongsListingActivity extends ActionBarActivity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,9 +16,10 @@ public class TopSongsListingActivity extends ActionBarActivity {
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new TopSongsListingActivityFragment())
+                    .add(R.id.container_songs, new TopSongsListingActivityFragment())
                     .commit();
         }
+
     }
 
 

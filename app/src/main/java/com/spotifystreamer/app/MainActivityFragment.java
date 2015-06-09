@@ -1,5 +1,8 @@
 package com.spotifystreamer.app;
 
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -15,7 +18,8 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.spotifystreamer.app.adapter.ArtistListItem;
-import com.spotifystreamer.app.adapter.CustomListLazyAdapter;
+import com.spotifystreamer.app.adapter.CustomArtistListAdapter;
+import com.spotifystreamer.app.adapter.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,9 +50,7 @@ public class MainActivityFragment extends Fragment {
     private EditText inputSearch;
     private ListView listView;
 
-    static String SPOTIFY_ACCESS_TOKEN = "";
-
-    private CustomListLazyAdapter adapter;
+    private CustomArtistListAdapter adapter;
 
     public MainActivityFragment() {
     }
@@ -56,7 +58,7 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        adapter = new CustomListLazyAdapter(getActivity(), new ArrayList<ArtistListItem>());
+        adapter = new CustomArtistListAdapter(getActivity(), new ArrayList<ArtistListItem>());
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         inputSearch = (EditText) rootView.findViewById(R.id.inputSearch);
@@ -68,13 +70,10 @@ public class MainActivityFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
                 final ArtistListItem item = (ArtistListItem) parent.getItemAtPosition(position);
-//                Intent intent = new Intent(view.getContext(), DetailActivity.class);
-//                intent.putExtra(Intent.EXTRA_TEXT, forecast);
-//                startActivity(intent);
+                Intent intent = new Intent(view.getContext(), TopSongsListingActivity.class);
+                intent.putExtra(Intent.EXTRA_TEXT, new String[] {item.getId(), item.getArtist()});
+                startActivity(intent);
 
-                Toast toast = Toast.makeText(view.getContext(), item.getArtist(), Toast.LENGTH_SHORT);
-                toast.setGravity(Gravity.TOP|Gravity.LEFT, 0, 0);
-                toast.show();
             }
 
         });
@@ -113,7 +112,18 @@ public class MainActivityFragment extends Fragment {
     public class FetchSpotifyArtistsTask extends AsyncTask<String, Void, ArrayList<ArtistListItem>> {
 
         private final String LOG_TAG = FetchSpotifyArtistsTask.class.getSimpleName();
+        private ProgressDialog pDialog;
 
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            pDialog = new ProgressDialog(getActivity());
+            pDialog.setMessage("Loading...");
+            pDialog.setCancelable(true);
+            pDialog.show();
+
+        }
 
         @Override
         protected ArrayList<ArtistListItem> doInBackground(String[] params) {
@@ -125,38 +135,15 @@ public class MainActivityFragment extends Fragment {
                 return null;
             }
 
+            if (Utils.SPOTIFY_ACCESS_TOKEN == null || Utils.SPOTIFY_ACCESS_TOKEN.trim().equals("")) {
+                return null;
+            }
+
             SpotifyApi api = new SpotifyApi();
 
-            api.setAccessToken(SPOTIFY_ACCESS_TOKEN);
+            api.setAccessToken(Utils.SPOTIFY_ACCESS_TOKEN);
             SpotifyService service = api.getService();
             ArtistsPager pager = service.searchArtists(params[0]);
-
-            /**
-             * Tracks tracks = service.getArtistTopTrack();
-             *
-             * get "is_playable" of the track (if available)
-             * tracks.tracks.get(0).is_playable;
-             *
-             * get "id" of the track
-             * tracks.tracks.get(0).id;
-             *
-             * get "name" of the track
-             * tracks.tracks.get(0).name;
-             *
-             * get "preview_url" of the track
-             * tracks.tracks.get(0).preview_url;
-             *
-             * get "duration_ms" of the track
-             * tracks.tracks.get(0).duration_ms;
-             *
-             * get "album_name" of the track
-             * tracks.tracks.get(0).album.name
-             *
-             * get "images" of the track
-             * tracks.tracks.get(0).album.images
-             *
-             */
-
 
             List<Artist> items = pager.artists.items;
             /**
@@ -173,16 +160,7 @@ public class MainActivityFragment extends Fragment {
                 String imageURL   = null;
 
                 List<Image> images = item.images;
-                for(Image image: images) {
-                    if(image.height != null && image.height < 100) {
-                        imageURL = image.url;
-                        break;
-                    }
-                }
-
-                if ((imageURL == null || imageURL.equals("")) && images.size() > 0) {
-                    imageURL = images.get(0).url;
-                }
+                imageURL = Utils.getImageURL(images);
 
                 ArtistListItem artist = new ArtistListItem(artistName, imageURL, id);
                 list.add(artist);
@@ -193,11 +171,29 @@ public class MainActivityFragment extends Fragment {
 
         @Override
         protected void onPostExecute(ArrayList<ArtistListItem> list) {
-            if (list != null) {
+            if (null != pDialog && pDialog.isShowing()) {
+                pDialog.dismiss();
+            }
+
+            if (list != null && list.size() > 0) {
+
                 adapter.clear();
                 for (ArtistListItem item: list) {
                     adapter.add(item);
                 }
+
+            } else {
+                final Activity activity = getActivity();
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        adapter.clear();
+                        Toast toast = Toast.makeText(activity, activity.getString(R.string.search_no_artist_found), Toast.LENGTH_SHORT);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                    }
+                });
+
             }
         }
     }

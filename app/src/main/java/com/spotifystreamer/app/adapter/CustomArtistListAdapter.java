@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.spotifystreamer.app.R;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -20,15 +21,14 @@ import java.util.ArrayList;
  * Created by Sheraz on 6/7/2015.
  */
 
-public class CustomListLazyAdapter extends
+public class CustomArtistListAdapter extends
         BaseAdapter  implements Filterable {
 
     private Activity activity;
-//    private ArrayList<HashMap<String, String>> data;
     private ArrayList<ArtistListItem> mOriginalValues;
     private ArrayList<ArtistListItem> mObjects;
     private static LayoutInflater inflater = null;
-    public ImageLoader imageLoader;
+//    public ImageLoader imageLoader;
     private ArrayFilter mFilter;
     /**
      * Indicates whether or not {@link #notifyDataSetChanged()} must be called whenever
@@ -44,18 +44,11 @@ public class CustomListLazyAdapter extends
     private final Object mLock = new Object();
 
 
-//    public CustomListLazyAdapter(Activity activity, ArrayList<HashMap<String, String>> data) {
-//        activity = activity;
-//        data = data;
-//        inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-//        imageLoader  = new ImageLoader(activity.getApplicationContext());
-//    }
-
-    public CustomListLazyAdapter(Activity activity, ArrayList<ArtistListItem> data) {
+    public CustomArtistListAdapter(Activity activity, ArrayList<ArtistListItem> data) {
         this.activity = activity;
         this.mObjects = data;
         inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        imageLoader  = new ImageLoader(activity.getApplicationContext());
+//        imageLoader  = new ImageLoader(activity.getApplicationContext());
     }
 
     public int getCount() {
@@ -78,7 +71,8 @@ public class CustomListLazyAdapter extends
 
         // Setting all values in listview
         artist.setText(artistListItem.getArtist());
-        imageLoader.DisplayImage(artistListItem.getImagePath(), thumb_image);
+        Picasso.with(activity).load(artistListItem.getImageURL()).into(thumb_image);
+//        imageLoader.DisplayImage(artistListItem.getImagePath(), thumb_image);
         return vi;
     }
 

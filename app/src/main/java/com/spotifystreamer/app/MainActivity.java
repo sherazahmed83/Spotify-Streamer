@@ -15,8 +15,8 @@ import com.spotify.sdk.android.authentication.AuthenticationResponse;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.PlayerNotificationCallback;
 import com.spotify.sdk.android.player.PlayerState;
-import com.spotifystreamer.app.adapter.CustomListLazyAdapter;
-
+import com.spotifystreamer.app.adapter.CustomArtistListAdapter;
+import com.spotifystreamer.app.adapter.Utils;
 
 public class MainActivity extends ActionBarActivity  implements
         PlayerNotificationCallback, ConnectionStateCallback {
@@ -31,7 +31,7 @@ public class MainActivity extends ActionBarActivity  implements
 
     private static String SPOTIFY_ACCESS_TOKEN = "";
 
-    private CustomListLazyAdapter adapter;
+    private CustomArtistListAdapter adapter;
     // Search EditText
     private EditText inputSearch;
 
@@ -51,7 +51,7 @@ public class MainActivity extends ActionBarActivity  implements
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
                 AuthenticationResponse.Type.TOKEN,
                 REDIRECT_URI);
-        builder.setScopes(new String[]{"user-read-private", "streaming"});
+        builder.setScopes(new String[]{"user-read-private", "streaming", "playlist-read-private", "playlist-modify-private", "user-library-read", "playlist-read-collaborative"});
         AuthenticationRequest request = builder.build();
 
         AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
@@ -88,7 +88,7 @@ public class MainActivity extends ActionBarActivity  implements
         if (requestCode == REQUEST_CODE) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
-                MainActivityFragment.SPOTIFY_ACCESS_TOKEN = response.getAccessToken();
+                Utils.SPOTIFY_ACCESS_TOKEN = response.getAccessToken();
                 Log.v(LOG_TAG, "The AccessToken recieved: " + response.getAccessToken());
 
             }
@@ -132,7 +132,7 @@ public class MainActivity extends ActionBarActivity  implements
 
     @Override
     protected void onDestroy() {
-       AuthenticationClient.logout(this);
+       //AuthenticationClient.logout(this);
         super.onDestroy();
     }
 

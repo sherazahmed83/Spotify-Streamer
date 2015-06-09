@@ -5,21 +5,12 @@ package com.spotifystreamer.app.adapter;
  */
 public class ArtistListItem {
     private String artist;
-    private String imagePath;
+    private String imageURL;
     private String id;
 
-    public ArtistListItem () {
-
-    }
-
-    public ArtistListItem (String artist, String imagePath) {
+    public ArtistListItem (String artist, String imageURL, String id) {
         this.artist = artist;
-        this.imagePath = imagePath;
-    }
-
-    public ArtistListItem (String artist, String imagePath, String id) {
-        this.artist = artist;
-        this.imagePath = imagePath;
+        this.imageURL = imageURL;
         this.id = id;
     }
 
@@ -31,12 +22,12 @@ public class ArtistListItem {
         this.artist = artist;
     }
 
-    public String getImagePath() {
-        return imagePath;
+    public String getImageURL() {
+        return imageURL;
     }
 
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
     }
 
     public String getId() {

@@ -9,6 +9,8 @@
     <string name="search_hint">Search artist</string>
     <string name="title_activity_spotify_main">SpotifyMainActivity</string>
     <string name="title_activity_main_activity2">MainActivity2Activity</string>
-    <string name="title_activity_top_songs_listing">TopSongsListingActivity</string>
+    <string name="title_activity_top_songs_listing">Top 10 Tracks</string>
+    <string name="search_no_artist_found">No artist found for this search string. Please enhance your search!</string>
+    <string name="search_no_song_found">No songs found for this artist!</string>
 
 </resources>
