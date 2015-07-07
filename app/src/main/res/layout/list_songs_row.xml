@@ -47,7 +47,7 @@
         android:layout_toRightOf="@+id/thumbnail"
         android:text="Just gona stand there and ..." />
 
-    <!-- Rightend Duration -->
+    <!-- Rightend Duration
     <TextView
         android:id="@+id/duration"
         android:layout_width="wrap_content"
@@ -60,7 +60,7 @@
         android:textSize="10dip"
         android:textColor="#10bcc9"
         android:textStyle="bold"/>
-
+-->
     <!-- Rightend Arrow -->
     <ImageView android:layout_width="wrap_content"
         android:layout_height="wrap_content"

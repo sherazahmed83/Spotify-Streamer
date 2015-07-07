@@ -9,6 +9,16 @@ import kaaes.spotify.webapi.android.models.Image;
 public class Utils {
 
     public static String SPOTIFY_ACCESS_TOKEN = "";
+    public static final String CLIENT_ID = "f90e2f71585d433f93ae23f442ab1f5e";
+    private static boolean isContentChanged = false;
+
+    public static boolean isContentChanged() {
+        return isContentChanged;
+    }
+
+    public static void setContentChanged(boolean isContentChanged) {
+        Utils.isContentChanged = isContentChanged;
+    }
 
     public static void CopyStream(InputStream is, OutputStream os)
     {
@@ -27,7 +37,7 @@ public class Utils {
         catch(Exception ex){}
     }
 
-    public static String getImageURL (List<Image> images) {
+    public static String getThumbnailImageURL(List<Image> images) {
         String imageURL   = null;
 
         for(Image image: images) {
@@ -43,4 +53,28 @@ public class Utils {
 
         return imageURL;
     }
+
+    public static String getFullImageURL(List<Image> images) {
+        String imageURL   = null;
+        int height = 0;
+
+        for(Image image: images) {
+            if (image.height < height) {
+
+            } else {
+                height = image.height;
+                imageURL = image.url;
+            }
+        }
+
+        return imageURL;
+    }
+
+    public static String getTimeFormattedString(long value) {
+        if (value < 10)
+           return "0" + value;
+
+        return String.valueOf(value);
+    }
+
 }

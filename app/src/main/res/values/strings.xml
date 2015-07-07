@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpotifyStreamer</string>
+    <string name="app_name">Spotify Streamer</string>
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
@@ -12,5 +12,12 @@
     <string name="title_activity_top_songs_listing">Top 10 Tracks</string>
     <string name="search_no_artist_found">No artist found for this search string. Please enhance your search!</string>
     <string name="search_no_song_found">No songs found for this artist!</string>
+    <string name="title_activity_song_player">SongPlayerActivity</string>
 
+    <!-- Account type (for sync-adapter authenticator) -->
+    <!-- SyncAdapter related -->
+    <string name="sync_account_type">spotify.streamer.com</string>
+    <string name="content_authority">com.spotifystreamer.app</string>
+
+    <string name="no_songs_found_message">No Tracks found for this artist. Please try again by selecting another artist!</string>
 </resources>

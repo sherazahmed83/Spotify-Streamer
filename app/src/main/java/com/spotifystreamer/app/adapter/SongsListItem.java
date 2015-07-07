@@ -35,14 +35,16 @@ public class SongsListItem {
     private Long durationInMS;
     private String albumName;
     private String imageURL;
+    private String fullImageURL;
 
-    public SongsListItem(String id, String name, String previewURL, Long durationInMS, String albumName, String imageURL) {
+    public SongsListItem(String id, String name, String previewURL, Long durationInMS, String albumName, String imageURL, String fullImageURL) {
         this.id = id;
         this.name = name;
         this.previewURL = previewURL;
         this.durationInMS = durationInMS;
         this.albumName = albumName;
         this.imageURL = imageURL;
+        this.fullImageURL = fullImageURL;
     }
 
     public String getId() {
@@ -91,5 +93,13 @@ public class SongsListItem {
 
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
+    }
+
+    public String getFullImageURL() {
+        return fullImageURL;
+    }
+
+    public void setFullImageURL(String fullImageURL) {
+        this.fullImageURL = fullImageURL;
     }
 }

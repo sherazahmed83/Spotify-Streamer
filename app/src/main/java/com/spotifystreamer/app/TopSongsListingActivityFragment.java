@@ -1,12 +1,18 @@
 package com.spotifystreamer.app;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.database.ContentObserver;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.ActionBar;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -17,186 +23,192 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.spotifystreamer.app.adapter.CustomSongsListAdapter;
-import com.spotifystreamer.app.adapter.SongsListItem;
 import com.spotifystreamer.app.adapter.Utils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import kaaes.spotify.webapi.android.SpotifyApi;
-import kaaes.spotify.webapi.android.SpotifyService;
-import kaaes.spotify.webapi.android.models.Image;
-import kaaes.spotify.webapi.android.models.Track;
-import kaaes.spotify.webapi.android.models.Tracks;
-
+import com.spotifystreamer.app.data.SpotifyStreamerContract;
+import com.spotifystreamer.app.data.SpotifyStreamerContract.TrackEntry;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class TopSongsListingActivityFragment extends Fragment {
+public class TopSongsListingActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private final String LOG_TAG = TopSongsListingActivityFragment.class.getSimpleName();
-    private ListView listView;
-    private CustomSongsListAdapter adapter;
+    private ListView mListView;
+    private CustomSongsListAdapter mSongsListAdapter;
     private MenuItem menuItem;
+    private String artistName = "";
+    private static int mSelectedItemPosition = 0;
+    private static String ITEM_POSITION;
+    private static final int TRACKS_LOADER = 0;
+    private boolean mTwoPane;
+    private Toast toast = null;
+
+    public static final String[] TRACK_COLUMNS = {
+            TrackEntry.TABLE_NAME + "." + TrackEntry._ID,
+            TrackEntry.COLUMN_ARTIST_NAME_KEY,
+            TrackEntry.COLUMN_TRACK_ID,
+            TrackEntry.COLUMN_TRACK_NAME,
+            TrackEntry.COLUMN_PREVIEW_URL,
+            TrackEntry.COLUMN_DURATION_IN_MS,
+            TrackEntry.COLUMN_ALBUM_NAME,
+            TrackEntry.COLUMN_IMAGE_URL,
+            TrackEntry.COLUMN_FULL_IMAGE_URL,
+            TrackEntry.COLUMN_POPULARITY
+    };
+
+    public static final int COL_TRACK_PK_ID = 0;
+    public static final int COL_ARTIST_NAME_KEY = 1;
+    public static final int COL_TRACK_ID   = 2;
+    public static final int COL_TRACK_NAME = 3;
+    public static final int COL_PREVIEW_URL = 4;
+    public static final int COL_DURATION_IN_MS = 5;
+    public static final int COL_ALBUM_NAME = 6;
+    public static final int COL_IMAGE_URL = 7;
+    public static final int COL_FULL_IMAGE_URL = 8;
+    public static final int COL_POPULATRITY = 9;
+
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
+        final Context context = container.getContext();
 
         String artistId = "";
-        String artistName = "";
+        mSongsListAdapter = new CustomSongsListAdapter(getActivity(), null, 0);
 
-        adapter = new CustomSongsListAdapter(getActivity(), new ArrayList<SongsListItem>());
-        Intent intent = getActivity().getIntent();
-        if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
-            String data[] = intent.getStringArrayExtra(Intent.EXTRA_TEXT);
-            artistId = data[0];
-            artistName = data[1];
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            artistId = arguments.getString(MainActivityFragment.ARTIST_ID_EXTRA_STRING);
+            artistName = arguments.getString(MainActivityFragment.ARTIST_NAME_EXTRA_STRING);
+
+            // Just to prevent the Loader to load the Songs list fragment container at
+            // start up to show empty screen
+            if (getLoaderManager().getLoader(TRACKS_LOADER) == null) {
+                getLoaderManager().initLoader(TRACKS_LOADER, null, this);
+            }
         }
-        ActionBar bar = ((TopSongsListingActivity) getActivity()).getSupportActionBar();
-        bar.setTitle(getString(R.string.title_activity_top_songs_listing));
-        bar.setSubtitle(artistName);
+
+        if (mTwoPane) {
+            ActionBar bar = ((MainActivity) getActivity()).getSupportActionBar();
+            bar.setTitle(getString(R.string.app_name));
+            bar.setSubtitle(artistName);
+
+            ContentObserver mObserver = new ContentObserver(new Handler()) {
+                public void onChange(boolean selfChange) {
+
+                    if (!TopSongsListingActivity.syncResult) {
+                        toast = Toast.makeText(context.getApplicationContext(), getString(R.string.no_songs_found_message), Toast.LENGTH_SHORT);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                    } else {
+                        if (toast != null) {
+                            toast.cancel();
+                            toast = null;
+                        }
+                    }
+                }
+            };
+            context.getContentResolver().registerContentObserver(Uri.parse(TopSongsListingActivity.SYNC_RESULT_URI), false, mObserver);
+        } else {
+            ActionBar bar = ((TopSongsListingActivity) getActivity()).getSupportActionBar();
+            bar.setTitle(getString(R.string.title_activity_top_songs_listing));
+            bar.setSubtitle(artistName);
+        }
 
         View rootView =  inflater.inflate(R.layout.fragment_top_songs_listing, container, false);
-        listView = (ListView) rootView.findViewById(R.id.listview_songs);
-        listView.setAdapter(adapter);
+        mListView = (ListView) rootView.findViewById(R.id.listview_songs);
+        mListView.setAdapter(mSongsListAdapter);
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
-            public void onItemClick(AdapterView<?> parent, final View view,
+            public void onItemClick(AdapterView<?> adapterView, final View view,
                                     int position, long id) {
-//                final ArtistListItem item = (ArtistListItem) parent.getItemAtPosition(position);
-//                Intent intent = new Intent(view.getContext(), TopSongsListingActivity.class);
-//                intent.putExtra(Intent.EXTRA_TEXT, new String[]{item.getId(), item.getArtist()});
-//                startActivity(intent);
+                final Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
+                if(cursor != null) {
 
+                    if (mTwoPane) {
+                        SongPlayerActivityFragment fragment = new SongPlayerActivityFragment();
+                        Bundle arguments = new Bundle();
+                        arguments.putStringArray(SongPlayerActivityFragment.TRACK_META_DATA, new String[]{cursor.getString(COL_TRACK_ID), cursor.getString(COL_ARTIST_NAME_KEY), cursor.getString(COL_ALBUM_NAME),
+                                cursor.getString(COL_TRACK_NAME), cursor.getString(COL_DURATION_IN_MS), cursor.getString(COL_FULL_IMAGE_URL), cursor.getString(COL_PREVIEW_URL),
+                                String.valueOf(mTwoPane)});
+                        fragment.setArguments(arguments);
+                        fragment.show(getActivity().getSupportFragmentManager(), SongPlayerActivity.SONG_PLAYER_DIALOG_TAG);
+
+                    } else {
+                        Intent intent = new Intent(view.getContext(), SongPlayerActivity.class);
+                        intent.putExtra(Intent.EXTRA_TEXT, new String[]{cursor.getString(COL_TRACK_ID), cursor.getString(COL_ARTIST_NAME_KEY), cursor.getString(COL_ALBUM_NAME),
+                                cursor.getString(COL_TRACK_NAME), cursor.getString(COL_DURATION_IN_MS), cursor.getString(COL_FULL_IMAGE_URL), cursor.getString(COL_PREVIEW_URL),
+                                String.valueOf(mTwoPane)});
+                        startActivity(intent);
+                    }
+                }
+                mSelectedItemPosition = position;
             }
 
         });
-        FetchSpotifyTopSongsTask task = new FetchSpotifyTopSongsTask();
-        task.execute(artistId);
 
+
+        if (savedInstanceState != null && savedInstanceState.containsKey(ITEM_POSITION)) {
+            mSelectedItemPosition = savedInstanceState.getInt(ITEM_POSITION);
+        }
 
         return rootView;
     }
 
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        String sortOrder = TrackEntry.COLUMN_POPULARITY + " DESC";
+        Uri trackUri = SpotifyStreamerContract.TrackEntry.buildTrackUriWithOutArtistName();
 
-    public class FetchSpotifyTopSongsTask extends AsyncTask<String, Void, ArrayList<SongsListItem>> {
+        return new CursorLoader(getActivity(),
+                trackUri,
+                TRACK_COLUMNS,
+                null,
+                null,
+                sortOrder);
+    }
 
-        private final String LOG_TAG = FetchSpotifyTopSongsTask.class.getSimpleName();
-        private ProgressDialog pDialog;
+    @Override
+    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
+        try {
+            Log.d(LOG_TAG, (cursor != null) + "  " + cursor.moveToFirst());
+            if(!cursor.moveToFirst() && Utils.isContentChanged()) {
+                Toast.makeText(getActivity().getApplicationContext(),
+                        "No Tracks found for this artist!", Toast.LENGTH_SHORT).show();
+            }
+        }catch (Exception e) {
+            Log.d(LOG_TAG, (cursor == null) + "");
+        }
+        mSongsListAdapter.swapCursor(cursor);
+        if (mSelectedItemPosition != ListView.INVALID_POSITION) {
+            mListView.smoothScrollToPosition(mSelectedItemPosition);
+        }
+    }
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
+    @Override
+    public void onLoaderReset(Loader<Cursor> cursorLoader) {
+        mSongsListAdapter.swapCursor(null);
+    }
 
-            pDialog = new ProgressDialog(getActivity());
-            pDialog.setMessage("Loading...");
-            pDialog.setCancelable(true);
-            pDialog.show();
-
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (mSelectedItemPosition != ListView.INVALID_POSITION) {
+            outState.putInt(ITEM_POSITION, mSelectedItemPosition);
         }
 
-        @Override
-        protected ArrayList<SongsListItem> doInBackground(String[] params) {
-            if (params == null || params.length == 0) {
-                return null;
-            }
+        super.onSaveInstanceState(outState);
+    }
 
-            if (params.length == 1 && params[0].trim().equals("")) {
-                return null;
-            }
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+//        getLoaderManager().initLoader(TRACKS_LOADER, null, this);
+        super.onActivityCreated(savedInstanceState);
+    }
 
-            if (Utils.SPOTIFY_ACCESS_TOKEN == null || Utils.SPOTIFY_ACCESS_TOKEN.trim().equals("")) {
-                return null;
-            }
-
-
-            SpotifyApi api = new SpotifyApi();
-            api.setAccessToken(Utils.SPOTIFY_ACCESS_TOKEN);
-            SpotifyService service = api.getService();
-            Map<String, Object> qMap = new HashMap<String, Object>();
-            qMap.put(SpotifyService.COUNTRY, "US");
-            Tracks tracks = service.getArtistTopTrack(params[0], qMap);
-
-            List<Track> tracksList = tracks.tracks;
-
-            /**
-             * Tracks tracks = service.getArtistTopTrack();
-             *
-             * get "is_playable" of the track (if available)
-             * tracks.tracks.get(0).is_playable;
-             *
-             * get "id" of the track
-             * tracks.tracks.get(0).id;
-             *
-             * get "name" of the track
-             * tracks.tracks.get(0).name;
-             *
-             * get "preview_url" of the track
-             * tracks.tracks.get(0).preview_url;
-             *
-             * get "duration_ms" of the track
-             * tracks.tracks.get(0).duration_ms;
-             *
-             * get "album_name" of the track
-             * tracks.tracks.get(0).album.name
-             *
-             * get "images" of the track
-             * tracks.tracks.get(0).album.images
-             *
-             */
-
-            ArrayList<SongsListItem> list = new ArrayList<SongsListItem>();
-
-            for (Track track : tracksList) {
-
-                //boolean is_playable = tracks.tracks.get(i).is_playable;
-                String id = track.id;
-                String name = track.name;
-                String preview_url = track.preview_url;
-                String album_name = track.album.name;
-                long duration = track.duration_ms;
-
-                List<Image> images = track.album.images;
-                String imageURL = Utils.getImageURL(images);
-
-                SongsListItem item = new SongsListItem(id, name, preview_url, duration, album_name, imageURL);
-                list.add(item);
-            }
-
-            return list;
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<SongsListItem> list) {
-            if (null != pDialog && pDialog.isShowing()) {
-                pDialog.dismiss();
-            }
-
-            if (list != null && list.size() > 0) {
-
-                adapter.clear();
-                for (SongsListItem item: list) {
-                    adapter.add(item);
-                }
-
-            } else {
-                final Activity activity = getActivity();
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast toast = Toast.makeText(activity, activity.getString(R.string.search_no_song_found), Toast.LENGTH_SHORT);
-                        toast.setGravity(Gravity.CENTER, 0, 0);
-                        toast.show();
-                    }
-                });
-            }
-        }
+    public void setTwoPane(boolean mTwoPane) {
+        this.mTwoPane = mTwoPane;
     }
 }

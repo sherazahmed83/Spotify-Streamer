@@ -1,7 +1,9 @@
 package com.spotifystreamer.app;
 
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -12,43 +14,51 @@ import android.widget.ListView;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
-import com.spotify.sdk.android.player.ConnectionStateCallback;
-import com.spotify.sdk.android.player.PlayerNotificationCallback;
-import com.spotify.sdk.android.player.PlayerState;
 import com.spotifystreamer.app.adapter.CustomArtistListAdapter;
 import com.spotifystreamer.app.adapter.Utils;
+import com.spotifystreamer.app.service.TopSongsSyncAdapter;
 
-public class MainActivity extends ActionBarActivity  implements
-        PlayerNotificationCallback, ConnectionStateCallback {
+public class MainActivity extends ActionBarActivity implements MainActivityFragment.Callback/*  implements
+        PlayerNotificationCallback, ConnectionStateCallback */{
     
     private String LOG_TAG = MainActivity.class.getSimpleName();
-    private static final String CLIENT_ID = "f90e2f71585d433f93ae23f442ab1f5e";
     private static final String REDIRECT_URI = "spotifystreamerapp://callback";
 
     // Request code that will be used to verify if the result comes from correct activity
     // Can be any integer
     private static final int REQUEST_CODE = 1337;
-
+    private static final String TOPSONGS_LISTING_ACTIVITYFRAGMENT_TAG = "TSLAFTAG";
     private static String SPOTIFY_ACCESS_TOKEN = "";
 
     private CustomArtistListAdapter adapter;
     // Search EditText
     private EditText inputSearch;
-
     private ListView listView;
+
+    private boolean mTwoPane;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new MainActivityFragment())
-                    .commit();
+        if (findViewById(R.id.container_songs) != null) {
+            mTwoPane = true;
+
+            TopSongsListingActivityFragment fragment = new TopSongsListingActivityFragment();
+            fragment.setTwoPane(mTwoPane);
+            if (savedInstanceState == null) {
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.container_songs, fragment, TOPSONGS_LISTING_ACTIVITYFRAGMENT_TAG)
+                        .commit();
+            }
+        } else {
+            mTwoPane = false;
+            getSupportActionBar().setElevation(0f);
         }
 
-        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(Utils.CLIENT_ID,
                 AuthenticationResponse.Type.TOKEN,
                 REDIRECT_URI);
         builder.setScopes(new String[]{"user-read-private", "streaming", "playlist-read-private", "playlist-modify-private", "user-library-read", "playlist-read-collaborative"});
@@ -94,46 +104,36 @@ public class MainActivity extends ActionBarActivity  implements
             }
         }
     }
+    public void onItemSelected(String artistId, String artistName){
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        bundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        bundle.putString(MainActivityFragment.ARTIST_ID_EXTRA_STRING, artistId);
+        bundle.putString(MainActivityFragment.ARTIST_NAME_EXTRA_STRING, artistName);
 
-    @Override
-    public void onLoggedIn() {
-        Log.d(LOG_TAG, "User logged in");
+        ContentResolver.requestSync(TopSongsSyncAdapter.getSyncAccount(this), getString(R.string.content_authority), bundle);
+
+        if (mTwoPane) {
+            TopSongsListingActivityFragment sf = new TopSongsListingActivityFragment();
+            sf.setTwoPane(mTwoPane);
+            sf.setArguments(bundle);
+
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+
+            transaction.replace(R.id.container_songs, sf, TOPSONGS_LISTING_ACTIVITYFRAGMENT_TAG);
+            transaction.addToBackStack(null);
+
+            // Commit the transaction
+            transaction.commit();
+
+        } else {
+            Intent intent = new Intent(this, TopSongsListingActivity.class);
+            intent.putExtra(Intent.EXTRA_TEXT, new String[] {artistId, artistName});
+            startActivity(intent);
+        }
     }
 
-    @Override
-    public void onLoggedOut() {
-        Log.d(LOG_TAG, "User logged out");
-    }
-
-    @Override
-    public void onLoginFailed(Throwable error) {
-        Log.d(LOG_TAG, "Login failed");
-    }
-
-    @Override
-    public void onTemporaryError() {
-        Log.d(LOG_TAG, "Temporary error occurred");
-    }
-
-    @Override
-    public void onConnectionMessage(String message) {
-        Log.d(LOG_TAG, "Received connection message: " + message);
-    }
-
-    @Override
-    public void onPlaybackEvent(EventType eventType, PlayerState playerState) {
-        Log.d(LOG_TAG, "Playback event received: " + eventType.name());
-    }
-
-    @Override
-    public void onPlaybackError(ErrorType errorType, String errorDetails) {
-        Log.d(LOG_TAG, "Playback error received: " + errorType.name());
-    }
-
-    @Override
-    protected void onDestroy() {
-       //AuthenticationClient.logout(this);
-        super.onDestroy();
-    }
 
 }

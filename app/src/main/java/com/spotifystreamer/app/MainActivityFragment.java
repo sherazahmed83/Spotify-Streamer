@@ -2,7 +2,6 @@ package com.spotifystreamer.app;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -45,15 +44,16 @@ import kaaes.spotify.webapi.android.models.Image;
  *
  */
 public class MainActivityFragment extends Fragment {
+    private static final String SEARCH_FILTER = "MainActivityFragment_searchReceiver";
 
     // Search EditText
     private EditText inputSearch;
     private ListView listView;
+    public static final String ARTIST_ID_EXTRA_STRING = "artist_id";
+    public static final String ARTIST_NAME_EXTRA_STRING = "artist_name";
 
     private CustomArtistListAdapter adapter;
 
-    public MainActivityFragment() {
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -70,9 +70,8 @@ public class MainActivityFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
                 final ArtistListItem item = (ArtistListItem) parent.getItemAtPosition(position);
-                Intent intent = new Intent(view.getContext(), TopSongsListingActivity.class);
-                intent.putExtra(Intent.EXTRA_TEXT, new String[] {item.getId(), item.getArtist()});
-                startActivity(intent);
+
+                ((Callback) getActivity()).onItemSelected(item.getId(), item.getArtist());
 
             }
 
@@ -88,9 +87,6 @@ public class MainActivityFragment extends Fragment {
             public void onTextChanged(CharSequence cs, int arg1, int arg2, int arg3) {
                 FetchSpotifyArtistsTask task = new FetchSpotifyArtistsTask();
                 task.execute(cs.toString());
-
-                // When user changed the Text
-                // adapter.getFilter().filter(cs);
             }
 
             @Override
@@ -160,7 +156,7 @@ public class MainActivityFragment extends Fragment {
                 String imageURL   = null;
 
                 List<Image> images = item.images;
-                imageURL = Utils.getImageURL(images);
+                imageURL = Utils.getThumbnailImageURL(images);
 
                 ArtistListItem artist = new ArtistListItem(artistName, imageURL, id);
                 list.add(artist);
@@ -196,5 +192,13 @@ public class MainActivityFragment extends Fragment {
 
             }
         }
+    }
+
+
+    public interface Callback {
+        /**
+         * TopSongsListingActivityFragementCallback for when an item has been selected.
+         */
+        public void onItemSelected(String artistId, String artistName);
     }
 }

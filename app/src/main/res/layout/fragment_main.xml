@@ -14,6 +14,7 @@
         android:inputType="textVisiblePassword"/>
 
     <ListView
+        style="@style/ArtistListStyle"
         android:id="@+id/listview_artist"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
