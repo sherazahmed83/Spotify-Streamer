@@ -267,15 +267,15 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
             return;
         }
         try {
-
-            int seekBarProgress = (int) (((float) mPlayer.getCurrentPosition() / finalTime) * 100);
+            int currentPosition = mPlayer.getCurrentPosition();
+            int seekBarProgress = (int) (((float) currentPosition / finalTime) * 100);
             seekbar.setProgress(seekBarProgress); // This math construction give a percentage of "was playing"/"song length"
 
             textview_time_start.setText(String.format("%s:%s",
-                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) mPlayer.getCurrentPosition())),
-                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) mPlayer.getCurrentPosition()) -
+                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) currentPosition)),
+                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) currentPosition) -
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                                            toMinutes((long) mPlayer.getCurrentPosition()))))
+                                            toMinutes((long) currentPosition))))
             );
 
             if (mPlayer.isPlaying()) {
