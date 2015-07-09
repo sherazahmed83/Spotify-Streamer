@@ -3,17 +3,21 @@ package com.spotifystreamer.app;
 
 import android.annotation.TargetApi;
 import android.app.Dialog;
+import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -57,8 +61,8 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
     private TextView    textview_time_end;
     private TextView    textview_artist_name;
     private TextView    textview_album_name;
-    ImageButton button_play;
-    SeekBar     seekbar;
+    private ImageButton button_play;
+    private SeekBar     seekbar;
 
     // Data variables
     private String      trackId;
@@ -70,12 +74,13 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
     private String      previewURL;
 
     // seekbar interaction variables
-    double      startTime = 0;
+    private double      startTime = 0;
     private double      finalTime = 0;
     private int forwardTime = 5000;
     private int backwardTime = 5000;
+    private int mCurrentPosition;
 
-//    private Player mPlayer;
+    //    private Player mPlayer;
     private MediaPlayer mPlayer;
     private final Handler mHandler = new Handler();
 
@@ -113,7 +118,7 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
         if (mTwoPane) {
             hideActionBarOnDialogFragment(rootView);
         } else {
-            showActionBarOnDialogFragment(rootView);
+            showActionBarOnDialogFragment(rootView, container.getContext());
         }
 
 
@@ -152,6 +157,8 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
             e.printStackTrace();
         }
 
+        prepareMediaPlayer();
+
         return mPlayer;
 
     } // end fo getMediaPlayer
@@ -183,6 +190,17 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
 
     }// End of initializeUIReferences()
 
+    private void prepareMediaPlayer() {
+        try {
+
+            mPlayer.prepare();
+        } catch (IllegalStateException e) {
+            Log.e(LOG_TAG, "The URI is not correct!");
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * initialize all click listeners
@@ -192,31 +210,12 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
         button_play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-
-                    mPlayer.prepare();
-                } catch (IllegalStateException e) {
-                    Log.e(LOG_TAG, "You might not set the URI correctly!");
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
                 finalTime = mPlayer.getDuration();
                 startTime = mPlayer.getCurrentPosition();
+                mCurrentPosition = (int) startTime;
 
-                textview_time_end.setText(String.format("%s:%s",
-                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) finalTime)),
-                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) finalTime) -
-                                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes((long) finalTime))))
-                );
-
-                textview_time_start.setText(String.format("%s:%s",
-                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) startTime)),
-                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) startTime) -
-                                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes((long) startTime))))
-                );
-
+                updateUIComponents();
 
                 if (!mPlayer.isPlaying()) {
                     mPlayer.start();
@@ -261,22 +260,39 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
         // End of button_prev configuration
     }// End of initializeClickListeners() method
 
+
+    private void updateUIComponents() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                int seekBarProgress = (int) (((float) mCurrentPosition / finalTime) * 100);
+                // This math construction give a percentage of "was playing"/"song length"
+
+                textview_time_end.setText(String.format("%s:%s",
+                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) finalTime)),
+                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) finalTime) -
+                                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes((long) finalTime))))
+                );
+
+                textview_time_start.setText(String.format("%s:%s",
+                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) mCurrentPosition)),
+                                Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) mCurrentPosition) -
+                                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes((long) mCurrentPosition))))
+                );
+
+                seekbar.setProgress(seekBarProgress);
+            }
+        });
+    }
+
     private void primarySeekBarProgressUpdater() {
         if (mPlayer == null) {
             mHandler.removeCallbacks(notification);
             return;
         }
         try {
-            int currentPosition = mPlayer.getCurrentPosition();
-            int seekBarProgress = (int) (((float) currentPosition / finalTime) * 100);
-            seekbar.setProgress(seekBarProgress); // This math construction give a percentage of "was playing"/"song length"
-
-            textview_time_start.setText(String.format("%s:%s",
-                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toMinutes((long) currentPosition)),
-                            Utils.getTimeFormattedString(TimeUnit.MILLISECONDS.toSeconds((long) currentPosition) -
-                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.
-                                            toMinutes((long) currentPosition))))
-            );
+            mCurrentPosition = mPlayer.getCurrentPosition();
+            updateUIComponents();
 
             if (mPlayer.isPlaying()) {
                 notification = new Runnable() {
@@ -317,13 +333,20 @@ public class SongPlayerActivityFragment extends DialogFragment/*  implements
     }
 
     @TargetApi(21)
-    public void showActionBarOnDialogFragment(View rootView) {
+    public void showActionBarOnDialogFragment(View rootView, Context context) {
         // set the listener for Navigation
         Toolbar actionBar = (Toolbar) rootView.findViewById(R.id.df_action_bar);
         if (actionBar != null) {
             final SongPlayerActivityFragment window = this;
             actionBar.setTitle(R.string.app_name);
             actionBar.inflateMenu(R.menu.menu_main);
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            Display display = wm.getDefaultDisplay();
+            DisplayMetrics metrics = new DisplayMetrics();
+            display.getMetrics(metrics);
+            int width = metrics.widthPixels;
+
+            actionBar.setMinimumWidth(width);
 //                actionBar.setNavigationOnClickListener(new View.OnClickListener() {
 //                    public void onClick(View v) {
 //                        window.dismiss();

@@ -98,7 +98,7 @@ public class TopSongsListingActivityFragment extends Fragment implements LoaderM
                 public void onChange(boolean selfChange) {
 
                     if (!TopSongsListingActivity.syncResult) {
-                        toast = Toast.makeText(context.getApplicationContext(), getString(R.string.no_songs_found_message), Toast.LENGTH_SHORT);
+                        toast = Toast.makeText(getActivity(), getString(R.string.no_songs_found_message), Toast.LENGTH_SHORT);
                         toast.setGravity(Gravity.CENTER, 0, 0);
                         toast.show();
                     } else {
@@ -111,8 +111,32 @@ public class TopSongsListingActivityFragment extends Fragment implements LoaderM
             };
             context.getContentResolver().registerContentObserver(Uri.parse(TopSongsListingActivity.SYNC_RESULT_URI), false, mObserver);
         } else {
-            ActionBar bar = ((TopSongsListingActivity) getActivity()).getSupportActionBar();
-            bar.setTitle(getString(R.string.title_activity_top_songs_listing));
+            ActionBar bar = null;
+            try {
+                bar = ((TopSongsListingActivity) getActivity()).getSupportActionBar();
+                bar.setTitle(getString(R.string.title_activity_top_songs_listing));
+            } catch (ClassCastException e) {
+                bar = ((MainActivity) getActivity()).getSupportActionBar();
+                bar.setTitle(getString(R.string.app_name));
+
+                ContentObserver mObserver = new ContentObserver(new Handler()) {
+                    public void onChange(boolean selfChange) {
+
+                        if (!TopSongsListingActivity.syncResult) {
+                            toast = Toast.makeText(context.getApplicationContext(), getString(R.string.no_songs_found_message), Toast.LENGTH_SHORT);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                        } else {
+                            if (toast != null) {
+                                toast.cancel();
+                                toast = null;
+                            }
+                        }
+                    }
+                };
+                context.getContentResolver().registerContentObserver(Uri.parse(TopSongsListingActivity.SYNC_RESULT_URI), false, mObserver);
+            }
+
             bar.setSubtitle(artistName);
         }
 
@@ -199,16 +223,26 @@ public class TopSongsListingActivityFragment extends Fragment implements LoaderM
             outState.putInt(ITEM_POSITION, mSelectedItemPosition);
         }
 
+        outState.putBoolean("activity_destroyed", true);
+
         super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
-//        getLoaderManager().initLoader(TRACKS_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
+        if (savedInstanceState != null) {
+            boolean activityDestroyed = savedInstanceState.getBoolean("activity_destroyed");
+            if (activityDestroyed) {
+                getLoaderManager().initLoader(TRACKS_LOADER, null, this);
+            }
+        }
+
     }
 
     public void setTwoPane(boolean mTwoPane) {
         this.mTwoPane = mTwoPane;
     }
+
+
 }

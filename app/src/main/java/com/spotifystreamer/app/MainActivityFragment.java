@@ -114,10 +114,10 @@ public class MainActivityFragment extends Fragment {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            pDialog = new ProgressDialog(getActivity());
-            pDialog.setMessage("Loading...");
-            pDialog.setCancelable(true);
-            pDialog.show();
+//            pDialog = new ProgressDialog(getActivity());
+//            pDialog.setMessage("Loading...");
+//            pDialog.setCancelable(true);
+//            pDialog.show();
 
         }
 
